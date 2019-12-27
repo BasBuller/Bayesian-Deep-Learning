@@ -57,17 +57,19 @@ def test(model, dataloader, gpu=True):
 
 
 # Image visualizations
-def sample_images(generator, latent_dist, latent_size, n_samples=32, out_shape=(1, 28, 28)):
+def sample_images(generator, latent_samples, out_shape=(1, 28, 28)):
+    samples = latent_samples.cpu()
     generator = generator.cpu()
     generator.train(mode=False)
     with torch.no_grad():
-        sample = latent_dist(n_samples, latent_size)
-        sample = generator(sample).detach()
 
-        ims = make_grid(sample.view(-1, *out_shape), nrow=8, padding=10)
+        # Draw samples from generative model 
+        samples = generator(latent_samples).detach()
+        ims = make_grid(samples.view(-1, *out_shape), nrow=8, padding=10)
         ims = ims.numpy()
 
-        plt.figure(figsize=((n_samples // 8)*5, 20))
+        # Plot figures 
+        plt.figure(figsize=((latent_samples.shape[0]// 8)*5, 20))
         plt.imshow(np.transpose(ims, (1, 2, 0)), interpolation="nearest")
         plt.show()
 
