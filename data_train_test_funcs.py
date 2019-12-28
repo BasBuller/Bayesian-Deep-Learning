@@ -13,10 +13,12 @@ from torchvision.utils import make_grid
 def mnist_dataloaders(batch_size=150, num_workers=4, pin_memory=True):
     r"""Prepare mnist dataloaders"""
 
-    train_mnist = datasets.MNIST("./data", train=True, transform=transforms.ToTensor())
+    transf = transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5], [0.5])])
+
+    train_mnist = datasets.MNIST("./data", train=True, transform=transf)
     train_loader = DataLoader(train_mnist, shuffle=True, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
 
-    test_mnist = datasets.MNIST("./data", train=False, transform=transforms.ToTensor())
+    test_mnist = datasets.MNIST("./data", train=False, transform=transf)
     test_loader = DataLoader(test_mnist, shuffle=True, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
 
     return train_loader, test_loader
