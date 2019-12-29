@@ -1,16 +1,42 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import tqdm
+from sklearn.datasets import make_moons
 
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 from torchvision import datasets, transforms
 from torchvision.utils import make_grid
 
 
+# Vectorized dataset container class
+class VectorizedDataset(Dataset):
+    """Class to contain matrices of vectorized dataset into a PyTorch compatible dataset.
+    
+    Make sure the first dimension of the Tensors is the sample dimension.
+    """
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __len__(self):
+        return len(self.x)
+
+    def __getitem(self, idx):
+        return self.x[idx], self.y[idx]
+
+
+# sklearn moon dataset wrapped in PyTorch dataset
+def moon_dataset(n_samples, noise, seed=9):
+    """Returns a PyTorch dataset containing sklearn's moon data."""
+    x, y = make_moons(n_samples=n_samples, shuffle=True, noise=noise, random_state=seed)
+    return VectorizedDataset(x, y)
+
+
 # Quick loading of datasets
-def mnist_dataloaders(batch_size=150, num_workers=4, pin_memory=True):
+def mnist_dataloaders(batch_size=128, num_workers=4, pin_memory=False):
     r"""Prepare mnist dataloaders"""
 
     transf = transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5], [0.5])])
