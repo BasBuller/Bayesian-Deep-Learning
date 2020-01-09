@@ -28,13 +28,6 @@ class VectorizedDataset(Dataset):
         return self.x[idx], self.y[idx]
 
 
-# sklearn moon dataset wrapped in PyTorch dataset
-def moon_dataset(n_samples, noise, seed=9):
-    """Returns a PyTorch dataset containing sklearn's moon data."""
-    x, y = make_moons(n_samples=n_samples, shuffle=True, noise=noise, random_state=seed)
-    return VectorizedDataset(x, y)
-
-
 # Quick loading of datasets
 def mnist_dataloaders(batch_size=128, num_workers=4, pin_memory=False):
     r"""Prepare mnist dataloaders"""
@@ -48,6 +41,19 @@ def mnist_dataloaders(batch_size=128, num_workers=4, pin_memory=False):
     test_loader = DataLoader(test_mnist, shuffle=True, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
 
     return train_loader, test_loader
+
+
+# Training convenience functions
+def device_init(model, gpu=False):
+    """Initialize device instance while checking if system has required hardware in case of GPU."""
+
+    # Initialize device
+    if gpu:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    else:
+        device = torch.device("cpu")
+
+    return device
 
 
 # Simple training loop
@@ -77,11 +83,6 @@ def train(train_step, models, dataloader, epochs=20, gpu=True):
         # Update progress bar
         bar.set_postfix(ordered_dict=loss_dict, refresh=False)
         bar.update()
-
-
-# Simple testing loop
-def test(model, dataloader, gpu=True):
-    pass
 
 
 # Image visualizations
