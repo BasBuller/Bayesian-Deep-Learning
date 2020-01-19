@@ -2,3 +2,5 @@ data/*
 __pycache__
 notes.org
 *.code-workspace
+.vscode
+trial.py
