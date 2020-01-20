@@ -26,14 +26,44 @@ Normalizing flows are a powerful method that allow to transform a density distrb
 
 There are four properties of a normalizing low that may have to be calculated in any given implementation. I will first atempt to describe these in intuitive, high level terms:
 
-* The forward calculation, $\bm{f}$. Used to transform a simple random variable to a more complex one.
-* The backward calculation (inverse of forward calculation), $\bm{g}$. Used to transform the complex random variable to its simpler form.
-* The determinant of the forward's Jacobian, $\bm{|det \frac{\delta f}{\delta z}|}$. Used to calculate the probability distribution of the complex random variable by taking the probability distribution of the simpler random variable.
-* The determinant of the backward's Jacobian, $\bm{|det \frac{\delta g}{\delta y}|}$. Used to calculate the probability distribution of the simple random variable by taking the probability distribution of the more complex random variable.
+* The forward calculation, $\bm{T}$. Used to transform a simple random variable to a more complex one.
+* The backward calculation (inverse of forward calculation), $\bm{T^{-1}}$. Used to transform the complex random variable to its simpler form.
+* The determinant of the forward's Jacobian, $\bm{|det J_{T}| = |det \frac{\delta T}{\delta u}|}$. Used to calculate the probability distribution of the complex random variable by taking the probability distribution of the simpler random variable.
+* The determinant of the backward's Jacobian, $\bm{|det J_{T^{-1}}| = |det \frac{\delta T^{-1}}{\delta x}|}$. Used to calculate the probability distribution of the simple random variable by taking the probability distribution of the more complex random variable.
 
 _Formal definitions and relations between above mentioned functions_:
 
-Let $\textbf{z} \in \mathbb{R}$ be a random variable and $\textbf{f}: \mathbb{R^{d}} \mapsto \mathbb{R^{d}}$ a bijective function a smooth bijective function. This $\textbf{f}$ can be used to map $\textbf{z} \sim \textbf{q(z)}$ to $\textbf{y = f(z)}$. Since the function is bijective it can also be inverted, we call this inverse $\mathbf{g (= f^{-1})}$.
+Let $\textbf{u} \in \mathbb{R}$ be a random variable and $\textbf{T}: \mathbb{R^{d}} \mapsto \mathbb{R^{d}}$ a bijective function a smooth bijective function. This $\textbf{T}$ can be used to map $\textbf{u} \sim \textbf{p(u)}$ to $\textbf{x = T(u)}$. Since the function is bijective it can also be inverted, we call this inverse $\mathbf{T^{-1}}$.
+
+## Model usage
+
+Flow based model support two types of operations, sampling from the model, and evaluating the model's density.
+
+* _Sampling from the model_ - $\bm{x=T(u)}$: Sample from simple distribution $\bm{u}$ and evaluating the forward transform $\bm{T}$ to generate a sample $\bm{x}$. Relies on samples from $\bm{U}$.
+
+* _Evaluating model density_ - $\bm{p_{x}(x) = p_{u}(T^{-1}(x))|det J_{T^{-1}}(x)|}$: Take a sample $\bm{x}$ and evaluate its density (probability) under the model. It requires computing the inverse transformation $\bm{T^{-1}}$ and its Jacobian determinent, and evaluating the density $\bm{p_{u}(u)}$. Relies on samples from $\bm{U}$.
+
+Main thing to remember: forward transformation $\bm{T}$ is used for sampling from the model, inverse transformation $\bm{T^{-1}}$ is used for evaluating densities.
+
+## Common loss functions
+
+Depending on the available data, different approaches to learning are more suitable. Fitting a flow-based model is done by fitting the model distribution $\bm{p_{x}(x; \theta)}$ to target distribution $\bm{p^{*}_{x}(x)}$ using a divergence between them. Only the Kullback-Leibler divergence will be treated next since this is the most commonly used form. Naming is adapted from _"Normalizing Flows for Probabilistic Modeling and Inference"_.
+
+* _Forward KL Divergence and Maximum Likelihood Estimation_
+
+The following loss function is mostly suited for situations in which we have samples from the target distribution, but cannot evaluate its density. Because of this the loss function is expressed such that it contains only terms of $\bm{x}$.
+
+$L(\theta) = D_{KL}[p_{x}^{*}(x) || P_{x}(x;\theta)] = -\mathbb{E}_{p^{*}_{x}(x)} [log p_{u}(T^{-1}(x;\phi); \psi) + log |det J_{T^{-1}} (x; \phi)|] + const$
+
+During training only evaluation of the model density is necessary as described in the previous section. Thus training requires computing the inverse transformation $\bm{T^{-1}}$ and its Jacobian determinent, and evaluating the density $\bm{p_{u}(u)}$. The operations of evaluationg the forward transform $\bm{T}$ and sampling from $\bm{x}$ are not needed during trainig, but are necessary if the model will be used for sampling after training.
+
+* _Backward KL Divergence_
+
+This loss function is mostly suited for situations where we can evaluate the target density and do not have access to samples from the distribution, but we can sample from $\bm{u}$. So the loss function is expressed such that it contains only terms of $\bm{u}$.
+
+$L(\theta) = \mathbb{E}_{p_{u}(u;\psi)} [ log p_{u}(u; \psi) - log | det J_{T}(u; \phi)| - log \widetilde{p}_{x}(T(u; \phi))] + const$
+
+The requirements for using this loss function are opposite for the use of the Forward KL Divergence.
 
 ## Useful mathematical theories and concepts to look at
 

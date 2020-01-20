@@ -5,11 +5,24 @@ import torch.nn as nn
 ###############################
 # Flow defintions
 ###############################
-class PlanarFlow(nn.Module):
-    r"""Simple planar flow, according to f(z) = z + uh(w^{T}z + b)"""
+class Flow(nn.Module):
+    r"""Base class for other normalizing flows."""
+
+    def __init__(self, act_func):
+        # Set activation function
+        if act_func == "relu":
+            self.activation = nn.ReLU(inplace=True)
+        elif act_func == "lrelu":
+            self.activation = nn.LeakyReLU(0.2, inplace=True)
+        elif act_func == "sigmoid":
+            self.activation = torch.sigmoid
+
+
+class PlanarFlow(Flow):
+    r"""Planar flow, according to f(z) = z + uh(w^{T}z + b)"""
 
     def __init__(self, n_points, act_func="relu"):
-        super(PlanarFlow, self).__init__()
+        super(PlanarFlow, self).__init__(act_func)
         self.u = nn.Parameter(torch.Tensor(n_points, 1))
         nn.init.kaiming_normal_(self.u)
 
@@ -18,14 +31,6 @@ class PlanarFlow(nn.Module):
 
         self.b = nn.Parameter(torch.Tensor(1))
         nn.init.constant_(self.b, 0)
-
-        # Set activation function
-        if act_func == "relu":
-            self.activation = nn.ReLU(inplace=True)
-        elif act_func == "lrelu":
-            self.activation = nn.LeakyReLU(0.2, inplace=True)
-        elif act_func == "sigmoid":
-            self.activation = torch.sigmoid
 
     def forward(self, x):
         # Run input through activation
@@ -42,11 +47,42 @@ class PlanarFlow(nn.Module):
         return y, det
 
 
+class SylvesterFlow(Flow):
+    r"""Planar flow extended to M hidden units, according to f(z) = z + Vh(W^{T}z + b)"""
+
+    def __init__(self, n_points, act_func="relu"):
+        super(SylvesterFlow, self).__init__(act_func)
+
+    def forward(self, x):
+        return
+
+
+class RadialFlow(Flow):
+    r"""Radial flow, according to f(z) = z + beta / (alpha + r(z)) * (z - z_0) where r(z) = ||z - z_0||"""
+
+    def __init__(self, n_points, act_func="relu"):
+        super(RadialFlow, self).__init__(act_func)
+
+    def forward(self, x):
+        return
+
+
+###############################
+# Utilities
+###############################
 class NormalizingFlowStack(nn.Module):
     r"""Combines a set of flows into a single model."""
 
     def __init__(self, flows):
         self.flows = nn.ModuleList(flows)
+
+
+###############################
+# Loss defintions
+###############################
+def forward_kld():
+
+    return
 
 
 if __name__ == "__main__":
