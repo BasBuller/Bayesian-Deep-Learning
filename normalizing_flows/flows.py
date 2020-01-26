@@ -3,12 +3,14 @@ import torch.nn as nn
 
 
 ###############################
-# Flow defintions
+# Residual defintions
 ###############################
-class Flow(nn.Module):
+class ResidualFlow(nn.Module):
     r"""Base class for other normalizing flows."""
 
     def __init__(self, act_func):
+        super(Flow, self).__init__()
+
         # Set activation function
         if act_func == "relu":
             self.activation = nn.ReLU(inplace=True)
@@ -18,7 +20,7 @@ class Flow(nn.Module):
             self.activation = torch.sigmoid
 
 
-class PlanarFlow(Flow):
+class PlanarFlow(ResidualFlow):
     r"""Planar flow, according to f(z) = z + uh(w^{T}z + b)"""
 
     def __init__(self, n_points, act_func="relu"):
@@ -47,7 +49,7 @@ class PlanarFlow(Flow):
         return y, det
 
 
-class SylvesterFlow(Flow):
+class SylvesterFlow(ResidualFlow):
     r"""Planar flow extended to M hidden units, according to f(z) = z + Vh(W^{T}z + b)"""
 
     def __init__(self, n_points, act_func="relu"):
@@ -57,7 +59,7 @@ class SylvesterFlow(Flow):
         return
 
 
-class RadialFlow(Flow):
+class RadialFlow(ResidualFlow):
     r"""Radial flow, according to f(z) = z + beta / (alpha + r(z)) * (z - z_0) where r(z) = ||z - z_0||"""
 
     def __init__(self, n_points, act_func="relu"):
@@ -73,16 +75,24 @@ class RadialFlow(Flow):
 class NormalizingFlowStack(nn.Module):
     r"""Combines a set of flows into a single model."""
 
-    def __init__(self, flows):
+    def __init__(self, prior, flows):
+        super(NormalizingFlowStack, self).__init__()
         self.flows = nn.ModuleList(flows)
+        self.priod = prior
+
+    def forward(self, x):
+        complete_det = 1
+        for flow in self.flows:
+            x, det = flow(x)
+            complete_det *= det
+        return x, complete_det
 
 
 ###############################
 # Loss defintions
 ###############################
-def forward_kld():
-
-    return
+def forward_kld(log_p, log_det):
+    return -(log_p + log_det).mean()
 
 
 if __name__ == "__main__":
